@@ -332,7 +332,6 @@ void editorDrawStatusBar(struct abuf* ab) {
 		E.cy + 1, E.numrows);
 	if (len > E.screencols) len = E.screencols;
 	abAppend(ab, status, len);
-	int len = 0;
 	while (len < E.screencols) {
 		if (E.screencols - len == rlen) {
 			abAppend(ab, rstatus, rlen);
@@ -347,7 +346,7 @@ void editorDrawStatusBar(struct abuf* ab) {
 }
 
 void editorDrawMessageBar(struct abuf* ab) {
-	abAppend(ab, "\x1[K", 3);
+	abAppend(ab, "\x1b[K", 3);
 	int msglen = strlen(E.statusmsg);
 	if (msglen > E.screencols) msglen = E.screencols;
 	if (msglen && time(NULL) - E.statusmsg_time < 5) abAppend(ab, E.statusmsg, msglen);
@@ -463,7 +462,7 @@ void initEditor() {
 	E.numrows = 0;
 	E.row = NULL;
 	E.filename = NULL;
-	E.statusmsg = '\0';
+	E.statusmsg[0] = '\0';
 	E.statusmsg_time = 0;
 
 	if (getWindowSize(&E.screenrows, &E.screencols) == -1) die("getWindowSize");
