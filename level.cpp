@@ -289,6 +289,15 @@ void editorRowDelChar(erow* row, int at) {
 	E.dirty++;
 }
 
+void editorRowInsert(erow *row, int at, int c) {
+	if (at < 0 || at >= row->size) at = row->size;
+	row->chars = (char*)realloc(row->chars, row->size + 2);
+	memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
+	row->size++;
+	row->chars[at] = c;
+	editorUpdateRow(row);
+}
+
 /*** editor operations ***/
 
 void editorInsertChar(int c) {
