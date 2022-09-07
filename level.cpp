@@ -24,6 +24,7 @@
 #define LEVEL_VERSION "0.0.1"
 #define LEVEL_TAB_STOP 8
 #define LEVEL_QUIT_TIMES 3
+#define ESCAPE_CONST '\x1b'
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -71,6 +72,8 @@ struct editorConfig E;
 /*** prototypes ***/
 
 void editorSetStatusMessage(const char* fmt, ...);
+void editorRefreshScreen();
+char *editorPrompt(const char *prompt);
 
 /*** terminal ***/
 
@@ -119,15 +122,15 @@ int editorReadKey() {
 		if (nread == -1 && errno != EAGAIN) die("read");
 	}
 
-	if (c == '\x1b') {
+	if (c == ESCAPE_CONST) {
 		char seq[3];
 
-		if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
-		if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+		if (read(STDIN_FILENO, &seq[0], 1) != 1) return ESCAPE_CONST;
+		if (read(STDIN_FILENO, &seq[1], 1) != 1) return ESCAPE_CONST;
 
 		if (seq[0] == '[') {
 			if (seq[1] >= '0' && seq[1] <= '9') {
-				if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
+				if (read(STDIN_FILENO, &seq[2], 1) != 1) return ESCAPE_CONST;
 				if (seq[2] == '~') {
 					switch (seq[1]) {
 						case '1': return HOME_KEY;
@@ -156,7 +159,7 @@ int editorReadKey() {
 			}
 		}
 
-		return '\x1b';
+		return ESCAPE_CONST;
 	} else {
 		return c;
 	}
@@ -175,7 +178,7 @@ int getCursorPosition(int *rows, int *cols) {
 	}
 	buf[i] = '\0';
 
-	if (buf[0] != '\x1b' || buf[1] != '[') return -1;
+	if (buf[0] != ESCAPE_CONST || buf[1] != '[') return -1;
 	if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
 
 	return 0;
@@ -367,7 +370,13 @@ E.filename = strdup(filename);
 }
 
 void editorSave() {
-	if (E.filename == NULL) return;
+	if (E.filename == NULL) {
+		E.filename = editorPrompt("Save as: %s (ESC) to cancel");
+		if (E.filename == NULL) {
+			editorSetStatusMessage("Save aborted");
+			return;
+		}
+	}
 
 	int len;
 	char *buf = editorRowsToString(&len);
@@ -518,6 +527,41 @@ void editorSetStatusMessage(const char* fmt, ...) {
 
 /*** input ***/
 
+char *editorPrompt(const char* prompt) {
+	size_t bufsize = 128;
+	char* buf = (char*)malloc(bufsize);
+
+	size_t buflen = 0;
+	buf[0] = '\0';
+
+
+	while (1) {
+		editorSetStatusMessage(prompt, buf);
+		editorRefreshScreen();
+
+		int c = editorReadKey();
+		if (c == DEL_KEY || c == CTRL_KEY('h') || c == BACKSPACE) {
+			if (buflen != 0) buf[--buflen] = '\0';
+		} else if (c == ESCAPE_CONST) {
+			editorSetStatusMessage("");
+			free(buf);
+			return NULL;
+		} else if (c == '\r') {
+			if (buflen != 0) {
+				editorSetStatusMessage("");
+				return buf;
+			}
+		} else if (!iscntrl(c) && c < 128) {
+			if (buflen == bufsize - 1) {
+				bufsize *= 2;
+				buf = (char*)realloc(buf, bufsize);
+			}
+			buf[buflen++] = c;
+			buf[buflen] = '\0';
+		}
+	}
+}
+
 void editorMoveCursor(int key) {
 	erow* row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
 
@@ -606,7 +650,7 @@ void editorProcessKeypress() {
 			break;
 
 		case CTRL_KEY('l'):
-		case '\x1b':
+		case ESCAPE_CONST:
 			break;
 
 		default:
