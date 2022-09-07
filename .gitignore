@@ -1,5 +1,8 @@
 # Visual Studio Config
 .vs/*
 
+# Test file
+test.txt
+
 # Output
 level
