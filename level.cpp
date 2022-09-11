@@ -212,8 +212,7 @@ int editorRowRxToCx(erow *row, int rx) {
 	int cur_rx = 0;
 	int cx;
 	for (cx = 0; cx < row->size; cx++) {
-		if (row->chars[cx] == '\t')
-			cur_rx += (LEVEL_TAB_STOP - 1) - (cur_rx % LEVEL_TAB_STOP);
+		if (row->chars[cx] == '\t') cur_rx += (LEVEL_TAB_STOP - 1) - (cur_rx % LEVEL_TAB_STOP);
 		cur_rx++;
 
 		if (cur_rx > rx) return cx;
@@ -275,7 +274,7 @@ void editorDelRow(int at) {
 	E.dirty++;
 }
 
-void editorRowInsertChar(erow* row, int at, int c) {
+void editorRowInsertChar(erow *row, int at, int c) {
 	if (at < 0 || at > row->size) at = row->size;
 	row->chars = (char*)realloc(row->chars, row->size + 2);
 	memmove(&row->chars[at + 1], &row->chars[at], row->size - at + 1);
@@ -285,7 +284,7 @@ void editorRowInsertChar(erow* row, int at, int c) {
 	E.dirty++;
 }
 
-void editorRowAppendString(erow* row, const char* s, size_t len) {
+void editorRowAppendString(erow *row, const char* s, size_t len) {
 	row->chars = (char*)realloc(row->chars, row->size + len + 1);
 	memcpy(&row->chars[row->size], s, len);
 	row->size += len;
@@ -294,7 +293,7 @@ void editorRowAppendString(erow* row, const char* s, size_t len) {
 	E.dirty++;
 }
 
-void editorRowDelChar(erow* row, int at) {
+void editorRowDelChar(erow *row, int at) {
 	if (at < 0 || at >= row->size) return;
 	memmove(&row->chars[at], &row->chars[at + 1], row->size - at);
 	row->size--;
@@ -320,9 +319,8 @@ void editorInsertChar(int c) {
 }
 
 void editorInsertNewLine() {
-	if (E.cx == 0) {
-		editorInsertRow(E.cy, "", 0);
-	} else {
+	if (E.cx == 0) editorInsertRow(E.cy, "", 0);
+	else {
 		erow *row = &E.row[E.cy];
 		editorInsertRow(E.cy + 1, &row->chars[E.cx], row->size - E.cx);
 		row = &E.row[E.cy];
@@ -338,7 +336,7 @@ void editorDelChar() {
 	if (E.cy == E.numrows) return;
 	if (E.cx == 0 && E.cy == 0) return;
 
-	erow* row = &E.row[E.cy];
+	erow *row = &E.row[E.cy];
 	if (E.cx > 0) {
 		editorRowDelChar(row, E.cx - 1);
 		E.cx--;
@@ -352,7 +350,7 @@ void editorDelChar() {
 
 /*** file i/o ***/
 
-char* editorRowsToString(int* buflen) {
+char *editorRowsToString(int *buflen) {
 	int total_len = 0;
 	for (int j = 0; j < E.numrows; j++)
 		total_len += E.row[j].size + 1;
@@ -427,7 +425,7 @@ void editorFindCallback(char *query, int key) {
 	static int last_match = -1;
 	static int direction = 1;
 
-	if (key == '\r' || key == '\x1b') {
+	if (key == '\r' || key == ESCAPE_CONST) {
 		last_match = -1;
 		direction = 1;
 		return;
@@ -455,8 +453,6 @@ void editorFindCallback(char *query, int key) {
 			break;
 		}
 	}
-
-	free(query);
 }
 
 void editorFind() {
@@ -475,7 +471,7 @@ void editorFind() {
 		E.rowoff = saved_rowoff;
 	}
 }
-
+	
 /*** append buffer ***/
 
 struct abuf {
