@@ -108,12 +108,12 @@ const char *C_HL_keywords[] = {
 	"void|", NULL
 };
 
-const struct editorSyntax HLDB[] = {
+struct editorSyntax HLDB[] = {
   {
-    "c",
-    C_HL_extensions,
-    C_HL_keywords,
-    "//", "/*", "*/",
+    (char*)"c",
+    (char**)C_HL_extensions,
+    (char**)C_HL_keywords,
+    (char*)"//", (char*)"/*", (char*)"*/",
     HL_HIGHLIGHT_NUMBERS | HL_HIGHLIGHT_STRINGS
   },
 };
@@ -277,7 +277,7 @@ void editorUpdateSyntax(erow *row) {
 	int i = 0;
 	while (i < row->rsize) {
 		char c = row->render[i];
-		unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : HL_NORMAL;
+		unsigned char prev_hl = (i > 0) ? row->hl[i - 1] : (int)HL_NORMAL;
 
 		if (scs_len && !in_string && !in_comment) {
 			if (!strncmp(&row->render[i], scs, scs_len)) {
